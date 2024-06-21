@@ -1,0 +1,80 @@
+{{ if .Values.ingress.enabled }}
+{{ if .Values.ingress.openshift }}
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ .Values.app }}-console
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.app }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  port:
+    targetPort: console
+  tls:
+    insecureEdgeTerminationPolicy: Redirect
+    termination: edge
+  to:
+    kind: Service
+    name: {{ .Values.app }}-svc
+    weight: 100
+  wildcardPolicy: None
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ .Values.app }}-s3
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.app }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  port:
+    targetPort: api
+  tls:
+    insecureEdgeTerminationPolicy: Redirect
+    termination: edge
+  to:
+    kind: Service
+    name: {{ .Values.app }}-svc
+    weight: 100
+  wildcardPolicy: None
+{{ else }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.app }}-console
+  namespace: {{ .Values.namespace }}
+spec:
+  {{- if .Values.ingress.ingressClassName }}
+  ingressClassName: {{ .Values.ingress.ingressClassName }}
+  {{- end }}
+{{- if .Values.ingress.tls }}
+  tls:
+  {{- range .Values.ingress.tls }}
+    - hosts:
+      {{- range .hosts }}
+        - {{ . | quote }}
+      {{- end }}
+      secretName: {{ .secretName }}
+  {{- end }}
+{{- end }}
+  rules:
+  {{- range .Values.ingress.hosts }}
+    - host: {{ .host }}
+      http:
+        paths:
+          - pathType: {{ .pathType }}
+            path: {{ .path }}
+            backend:
+              service:
+                name: {{ $.Values.app }}-svc
+                port:
+                  name: {{ .port }}
+  {{- end }}
+{{- end }}
+{{ end }}

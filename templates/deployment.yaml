@@ -1,0 +1,44 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app }}-deployment
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.app }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.app }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.app }}
+    spec:
+      containers:
+      - name: {{ .Values.app }}
+        args:
+        - minio server /data --console-address :9090
+        command:
+        - /bin/bash
+        - -c
+        image: {{ .Values.deployment.image }}:{{ .Values.deployment.tag }}
+        envFrom:
+        - secretRef:
+            name: {{ .Values.security.secretName }}
+        ports:
+        {{- .Values.deployment.ports | toYaml | nindent 10 }}
+        resources:
+        {{- .Values.resources | toYaml | nindent 10 }}
+        volumeMounts:
+        - mountPath: /data
+          name: minio
+      volumes:
+      - persistentVolumeClaim:
+          claimName: {{ .Values.app }}-pvc
+        name: minio

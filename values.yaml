@@ -1,0 +1,62 @@
+# Declare variables to be passed into your templates.
+
+app: minio
+namespace: minio
+serviceAccountName: minio-sa
+
+deployment:
+  image: quay.io/minio/minio
+  tag: latest
+  ports:
+    - containerPort: 9000
+      protocol: TCP
+      name: api
+    - containerPort: 9090
+      protocol: TCP
+      name: console
+
+security:
+  secretName: minio-root-secret
+  username: root
+  password: your_root_password
+
+service:
+  sessionAffinity: None
+  ports:
+    - name: api
+      port: 9000
+      targetPort: api
+    - name: console
+      port: 9090
+      targetPort: 9090
+
+ingress:
+  enabled: true
+  openshift: false
+  className: "traefik"
+  hosts:
+    - host: minio-console.cluster.local
+      port: console
+      path: /
+      pathType: ImplementationSpecific
+    - host: minio-s3.cluster.local
+      port: api
+      path: /
+      pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources:
+  requests:
+    cpu: 1
+    memory: 4Gi
+  limits:
+    cpu: 4
+    memory: 8Gi
+
+storage:
+  size: 50G
+  storageClass: gp3-csi
+  volumeMode: Filesystem

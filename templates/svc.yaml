@@ -1,0 +1,17 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.app }}-svc
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.app }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  ports:
+  {{- .Values.service.ports | toYaml | nindent 4 }}
+  selector:
+    app: {{ .Values.app }}
+  sessionAffinity: {{ .Values.service.sessionAffinity }}
+  type: ClusterIP
