@@ -6,7 +6,7 @@ namespace: minio
 serviceAccountName: minio-sa
 
 deployment:
-  image: quay.io/minio/minio
+  image: ghcr.io/coollabsio/minio
   tag: latest
   ports:
     - containerPort: 9000
